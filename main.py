@@ -1,29 +1,22 @@
-# FastAPI is the main class that creates the web application instance
 from fastapi import FastAPI
-# Body is a special parameter class that tells FastAPI to extract data from the request body
 from fastapi.params import Body
 
-# Create the FastAPI application instance that will handle all HTTP requests
 app = FastAPI()
 
-# Define a GET endpoint at the root path "/"
-# GET requests are used to retrieve data from the server
 @app.get("/")
 def root():
     return {"message": "Hello World"}
 
-# Define a POST endpoint at "/createposts"
-# POST requests are used to send data to the server to create or modify resources
 @app.post("/createposts")
 def create_posts(payload: dict = Body(...)):
-    # The Body(...) parameter tells FastAPI to:
-    # 1. Extract JSON data from the request body
-    # 2. Parse it into a Python dictionary
-    # 3. The ellipsis (...) marks this parameter as required
-    
-    # Print the received payload to the console for debugging and learning
+    # Print the entire payload dictionary to see what data was received
     print(payload)
     
-    # Return a JSON response confirming the operation
-    # FastAPI automatically converts Python dictionaries to JSON
-    return {"message": "Posts were created"}
+    # Access specific keys from the payload dictionary using bracket notation
+    # payload['content'] retrieves the value associated with the 'content' key
+    # payload['title'] retrieves the value associated with the 'title' key
+    
+    # Use f-strings (formatted string literals) to create dynamic responses
+    # The f-prefix allows embedding expressions inside curly braces {}
+    # This creates a personalized response echoing back the received data
+    return {"message": f"content : {payload['content']}, title : {payload['title']}"}
