@@ -15,10 +15,6 @@ class Post(BaseModel):
 def root():
     return {"message": "Hello World"}
 
-# RESTful endpoint naming convention
-# Use resource names (nouns) rather than action names (verbs)
-# The HTTP method (POST) already indicates the action (create)
-# This follows REST principles: POST /posts creates a post
 @app.post("/posts")
 def create_posts(post: Post):
     print(post.rating)
