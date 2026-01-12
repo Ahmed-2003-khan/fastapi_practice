@@ -15,15 +15,12 @@ class Post(BaseModel):
 def root():
     return {"message": "Hello World"}
 
-@app.post("/createposts")
+# RESTful endpoint naming convention
+# Use resource names (nouns) rather than action names (verbs)
+# The HTTP method (POST) already indicates the action (create)
+# This follows REST principles: POST /posts creates a post
+@app.post("/posts")
 def create_posts(post: Post):
-    # Access a single attribute using dot notation
     print(post.rating)
-    
-    # Convert the entire Pydantic model instance into a standard Python dictionary
-    # The .dict() method extracts all data fields into a key-value format
-    # This is extremely useful for database operations or further data processing
-    # Note: In newer Pydantic versions (v2), the preferred method is .model_dump()
     print(post.dict())
-    
     return {"message": "post created"}
