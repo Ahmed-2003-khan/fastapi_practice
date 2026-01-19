@@ -2,8 +2,6 @@ from fastapi import FastAPI
 from fastapi.params import Body
 from pydantic import BaseModel
 from typing import Optional
-# randrange generates random integers within a specified range
-# Used here to create unique IDs for posts
 from random import randrange
 
 app = FastAPI()
@@ -16,26 +14,32 @@ class Post(BaseModel):
     published: bool = True
     rating: Optional[int] = None
 
+# find_post is a utility function to search through our data collection
+# It abstracts the search logic from the request handling path
+def find_post(id: int):
+    # Iterate through the list of posts to find a match by ID
+    for post in my_posts:
+        if post['id'] == id:
+            return post
+    # If no match is found, the function implicitly returns None
+
 @app.get("/posts")
 def get_posts():
     return {"data": my_posts}
 
 @app.post("/posts")
 def create_posts(post: Post):
-    # Step 1: Convert the Pydantic model to a dictionary
-    # This allows us to manipulate the data and add additional fields
     post_dict = post.dict()
-    
-    # Step 2: Generate a unique ID for the new post
-    # randrange(0, 1000000) creates a random integer between 0 and 999,999
-    # In production, databases handle ID generation automatically
     post_dict['id'] = randrange(0, 1000000)
-    
-    # Step 3: Persist the data by appending to our in-memory list
-    # This simulates saving to a database
     my_posts.append(post_dict)
-    
-    # Step 4: Return the created resource with its ID
-    # RESTful best practice: return the complete created object
-    # This confirms to the client what was actually saved
     return {"data": post_dict}
+
+# Path parameters like {id} allow capturing dynamic segments of a URL
+# FastAPI automatically handles type conversion based on the function signature
+@app.get("/posts/{id}")
+def get_post(id: int):
+    # Pass the captured id to our search helper
+    # The 'id' variable is already an integer thanks to FastAPI's type hint
+    post = find_post(id)
+    # Return the specific resource or None if not found
+    return {"data": post}
