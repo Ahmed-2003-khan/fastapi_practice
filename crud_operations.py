@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Response, status
+from fastapi import FastAPI, Response, status, HTTPException
 from fastapi.params import Body
 from pydantic import BaseModel
 from typing import Optional
@@ -30,17 +30,15 @@ def create_posts(post: Post):
     my_posts.append(post_dict)
     return {"data": post_dict}
 
-# The Response object allows for manual control over HTTP response headers and status codes
-# The status module provides human-readable constants for standard HTTP status codes
+# HTTPException is the preferred way to handle errors in FastAPI
+# It allows us to interrupt the normal request flow and return an error response immediately
 @app.get("/posts/{id}")
-def get_post(id: int, response: Response):
+def get_post(id: int):
     post = find_post(id)
-    # Check if the resource was found
     if not post:
-        # Manually set the HTTP status code to 404 (Not Found)
-        # Using status.HTTP_404_NOT_FOUND is more readable than hardcoding 404
-        response.status_code = status.HTTP_404_NOT_FOUND
-        # Return a descriptive error message to help the client understand what went wrong
-        return {"message": "post not found"}
-    # If found, the default status code is 200 (OK)
+        # Raising an exception is cleaner than manually editing the Response object
+        # It automatically handles the status code and error detail format
+        # This keeps the route signature simple and focused on the happy path
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"post with id: {id} was not found")
+    # If no exception is raised, FastAPI continues and returns the found resource
     return {"data": post}
