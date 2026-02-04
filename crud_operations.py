@@ -42,24 +42,40 @@ def get_post(id: int):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"post with id: {id} was not found")
     return {"data": post}
 
-# DELETE endpoint with proper HTTP semantics
-# 204 No Content is the standard status code for successful DELETE operations
-# It indicates success but that there's no content to return in the response body
 @app.delete("/posts/{id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_post(id: int):
-    # Find the index of the post to delete
+    index = find_index_post(id)
+    if index == None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"post with id: {id} was not found")
+    my_posts.pop(index)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+# PUT endpoint for updating (replacing) an entire resource
+# PUT is used for full replacement - the client sends the complete updated resource
+# HTTP 202 Accepted indicates the request was accepted but processing may not be complete
+# Note: 200 OK is more common for synchronous updates; 202 is for async processing
+@app.put("/posts/{id}", status_code=status.HTTP_202_ACCEPTED)
+def update_post(id: int, post: Post):
+    # Find the index of the post to update
     index = find_index_post(id)
     
-    # Validate that the post exists before attempting deletion
-    # index will be None if no matching post is found
-    # Using == None instead of 'is None' works but 'is None' is more Pythonic
+    # Validate that the resource exists before attempting to update
     if index == None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"post with id: {id} was not found")
     
-    # Remove the post from the list
-    my_posts.pop(index)
+    # Convert the Pydantic model to a dictionary
+    post_dict = post.dict()
     
-    # Return an empty Response with 204 status
-    # 204 No Content means success but no response body should be sent
-    # This is semantically correct for DELETE operations
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    # Preserve the ID from the URL path parameter
+    # This ensures the ID cannot be changed through the request body
+    # The URL is the source of truth for the resource identifier
+    post_dict['id'] = id
+    
+    # Replace the entire resource at the specified index
+    # This is a full replacement, not a partial update (which would be PATCH)
+    my_posts[index] = post_dict
+    
+    # Return the updated collection
+    # Better practice: return {"data": post_dict} to show only the updated resource
+    return {"data": my_posts}
+
