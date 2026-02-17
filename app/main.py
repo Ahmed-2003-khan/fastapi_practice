@@ -3,23 +3,13 @@ from fastapi.params import Body
 from pydantic import BaseModel
 from typing import Optional
 from random import randrange
-
-# psycopg2 is the most popular PostgreSQL adapter for Python
-# It allows Python applications to connect to and interact with PostgreSQL databases
 import psycopg2
-
-# RealDictCursor returns query results as dictionaries instead of tuples
-# This makes it easier to work with column names: row['id'] instead of row[0]
 from psycopg2.extras import RealDictCursor
-
 import os
-
-# python-dotenv loads environment variables from a .env file
-# This keeps sensitive data (passwords, API keys) out of source code
 from dotenv import load_dotenv
+# time module is used for adding delays between connection retry attempts
+import time
 
-# Load environment variables from .env file in the project root
-# This should be called before accessing any environment variables
 load_dotenv()
 
 
@@ -31,28 +21,24 @@ class Post(BaseModel):
     title: str
     content: str
     published: bool = True
-    rating: Optional[int] = None
+    # Removed 'rating' field - simplified model to match database schema
     
-# Establish connection to PostgreSQL database
-# This runs at application startup (module level)
-try:
-    # psycopg2.connect() creates a connection to the database
-    # Parameters:
-    # - host: database server location ('localhost' for local development)
-    # - database: name of the database to connect to
-    # - user: PostgreSQL username
-    # - password: retrieved from environment variable for security
-    # - cursor_factory: RealDictCursor makes results dict-like instead of tuples
-    conn = psycopg2.connect(host='localhost', database='fastapi', user='postgres', password=os.getenv("DATABASE_PASSWORD"), cursor_factory=RealDictCursor)
-    
-    # Cursor is used to execute SQL queries and fetch results
-    # Think of it as a pointer that moves through query results
-    cursor = conn.cursor()
-    print("Database connection was successful")
-except Exception as error:
-    # Catch any connection errors (wrong password, database doesn't exist, etc.)
-    print("Connection to database failed")
-    print("Error: ", error)
+
+# Connection retry loop - keeps trying until database is available
+# This is useful when the database might not be ready immediately (e.g., in Docker containers)
+while True:
+    try:
+        conn = psycopg2.connect(host='localhost', database='fastapi', user='postgres', password=os.getenv("DATABASE_PASSWORD"), cursor_factory=RealDictCursor)
+        cursor = conn.cursor()
+        print("Database connection was successful")
+        # Break out of the loop once connection succeeds
+        break
+    except Exception as error:
+        print("Connection to database failed")
+        print("Error: ", error)
+        # Wait 2 seconds before retrying to avoid overwhelming the database
+        time.sleep(2)
+
 
 def find_post(id: int):
     for post in my_posts:
@@ -64,9 +50,19 @@ def find_index_post(id: int):
         if p['id'] == id:
             return i
 
+# First endpoint to use real database queries instead of in-memory list
 @app.get("/posts")
 def get_posts():
-    return {"data": my_posts}
+    # cursor.execute() runs the SQL query on the database
+    # SELECT * FROM posts retrieves all columns from all rows in the 'posts' table
+    cursor.execute("SELECT * FROM posts")
+    
+    # fetchall() retrieves all rows returned by the query
+    # RealDictCursor makes each row a dictionary: {'id': 1, 'title': '...', 'content': '...'}
+    posts = cursor.fetchall()
+    
+    # Return the database results instead of the in-memory my_posts list
+    return {"data": posts}
 
 @app.post("/posts", status_code=status.HTTP_201_CREATED)
 def create_posts(post: Post):
