@@ -1,3 +1,10 @@
+# This file has been moved into the 'app' package for better project organization
+# Package structure allows for:
+# - Separation of concerns (routes, models, database, etc. in separate modules)
+# - Easier testing and maintenance
+# - Scalability as the application grows
+# To run: uvicorn app.main:app --reload (note the 'app.main' module path)
+
 from fastapi import FastAPI, Response, status, HTTPException
 from fastapi.params import Body
 from pydantic import BaseModel
@@ -50,32 +57,13 @@ def delete_post(id: int):
     my_posts.pop(index)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
-# PUT endpoint for updating (replacing) an entire resource
-# PUT is used for full replacement - the client sends the complete updated resource
-# HTTP 202 Accepted indicates the request was accepted but processing may not be complete
-# Note: 200 OK is more common for synchronous updates; 202 is for async processing
 @app.put("/posts/{id}", status_code=status.HTTP_202_ACCEPTED)
 def update_post(id: int, post: Post):
-    # Find the index of the post to update
     index = find_index_post(id)
-    
-    # Validate that the resource exists before attempting to update
     if index == None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"post with id: {id} was not found")
-    
-    # Convert the Pydantic model to a dictionary
     post_dict = post.dict()
-    
-    # Preserve the ID from the URL path parameter
-    # This ensures the ID cannot be changed through the request body
-    # The URL is the source of truth for the resource identifier
     post_dict['id'] = id
-    
-    # Replace the entire resource at the specified index
-    # This is a full replacement, not a partial update (which would be PATCH)
     my_posts[index] = post_dict
-    
-    # Return the updated collection
-    # Better practice: return {"data": post_dict} to show only the updated resource
     return {"data": my_posts}
 
