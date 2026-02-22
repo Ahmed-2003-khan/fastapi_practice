@@ -11,7 +11,6 @@ from sqlalchemy.orm import Session
 from fastapi import Depends
 import time
 from . import models
-# get_db is now imported from database.py - centralizing the session logic in one place
 from .database import engine, SessionLocal, get_db
 
 
@@ -53,25 +52,28 @@ def find_index_post(id: int):
         if p['id'] == id:
             return i
 
-@app.get("/sqlalchemy")
-def test_posts(db: Session = Depends(get_db)):
-    # db.query(models.Post) - creates a SELECT query targeting the Post model/table
-    # .all() - executes the query and returns all rows as a list of Post ORM objects
-    # This is the SQLAlchemy ORM equivalent of: cursor.execute("SELECT * FROM posts")
+@app.get("/posts")
+def get_posts(db: Session = Depends(get_db)):
     posts = db.query(models.Post).all()
     return {"data": posts}
 
-@app.get("/posts")
-def get_posts():
-    cursor.execute("SELECT * FROM posts")
-    posts = cursor.fetchall()
-    return {"data": posts}
-
 @app.post("/posts", status_code=status.HTTP_201_CREATED)
-def create_posts(post: Post):
-    cursor.execute("INSERT INTO posts (title, content, published) VALUES (%s, %s, %s) RETURNING *", (post.title, post.content, post.published))
-    new_post = cursor.fetchone()
-    conn.commit()
+def create_posts(post: Post, db: Session = Depends(get_db)):
+    # Create a new SQLAlchemy model instance from the Pydantic request body
+    # This is equivalent to: INSERT INTO posts (title, content, published) VALUES (...)
+    new_post = models.Post(title=post.title, content=post.content, published=post.published)
+    
+    # db.add() stages the new object - tells SQLAlchemy to track this new record
+    db.add(new_post)
+    
+    # db.commit() writes the changes to the database permanently (equivalent to conn.commit())
+    db.commit()
+    
+    # db.refresh() re-fetches the row from the database after the commit
+    # This is essential to get server-generated values like id and created_at
+    # Without this, new_post would still have None for those fields
+    db.refresh(new_post)
+    
     return {"data": new_post}
 
 @app.get("/posts/{id}")
