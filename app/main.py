@@ -7,13 +7,14 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 import os
 from dotenv import load_dotenv
+# Session from sqlalchemy.orm provides type hinting for the database session object
+from sqlalchemy.orm import Session
+# Depends is used for dependency injection in FastAPI, allowing us to share common logic (like database connections)
+from fastapi import Depends
 import time
-# Import our models and database engine for SQLAlchemy integration
 from . import models
 from .database import engine, SessionLocal
 
-# Command SQLAlchemy to create all tables defined in models.py if they don't already exist
-# This is a simple way to set up the database schema on startup
 models.Base.metadata.create_all(bind=engine)
 
 load_dotenv()
@@ -21,8 +22,6 @@ load_dotenv()
 
 app = FastAPI()
 
-# A "Dependency" in FastAPI that provides a new database session for each request
-# It ensures the connection is automatically closed after the request is finished
 def get_db():
     db = SessionLocal()
     try:
@@ -59,6 +58,16 @@ def find_index_post(id: int):
     for i, p in enumerate(my_posts):
         if p['id'] == id:
             return i
+
+# Test route to verify the database dependency injection
+# db: Session = Depends(get_db) performs several tasks:
+# 1. Calls get_db() to create a new database session
+# 2. Injects that session into the 'db' parameter
+# 3. Ensures the session is closed after the request is finished (via the finally block in get_db)
+@app.get("/sqlalchemy")
+def test_posts(db: Session = Depends(get_db)):
+    # At this point, 'db' is a live SQLAlchemy session ready for ORM queries
+    return {"message": "Hello World"}
 
 @app.get("/posts")
 def get_posts():
