@@ -8,11 +8,27 @@ from psycopg2.extras import RealDictCursor
 import os
 from dotenv import load_dotenv
 import time
+# Import our models and database engine for SQLAlchemy integration
+from . import models
+from .database import engine, SessionLocal
+
+# Command SQLAlchemy to create all tables defined in models.py if they don't already exist
+# This is a simple way to set up the database schema on startup
+models.Base.metadata.create_all(bind=engine)
 
 load_dotenv()
 
 
 app = FastAPI()
+
+# A "Dependency" in FastAPI that provides a new database session for each request
+# It ensures the connection is automatically closed after the request is finished
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
 my_posts = [{'title': 'title of post 1', 'content': 'content of post 1', 'id': 1}, {'title': 'title of post 2', 'content': 'content of post 2', 'id': 2}]
 
