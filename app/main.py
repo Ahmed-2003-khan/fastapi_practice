@@ -59,27 +59,21 @@ def get_posts(db: Session = Depends(get_db)):
 
 @app.post("/posts", status_code=status.HTTP_201_CREATED)
 def create_posts(post: Post, db: Session = Depends(get_db)):
-    # Create a new SQLAlchemy model instance from the Pydantic request body
-    # This is equivalent to: INSERT INTO posts (title, content, published) VALUES (...)
-    new_post = models.Post(title=post.title, content=post.content, published=post.published)
-    
-    # db.add() stages the new object - tells SQLAlchemy to track this new record
+    # post.dict() converts the Pydantic model to a dictionary: {'title': ..., 'content': ..., 'published': ...}
+    # **post.dict() unpacks it as keyword arguments - cleaner than listing every field manually
+    # This is especially useful when models have many fields
+    new_post = models.Post(**post.dict())
     db.add(new_post)
-    
-    # db.commit() writes the changes to the database permanently (equivalent to conn.commit())
     db.commit()
-    
-    # db.refresh() re-fetches the row from the database after the commit
-    # This is essential to get server-generated values like id and created_at
-    # Without this, new_post would still have None for those fields
     db.refresh(new_post)
-    
     return {"data": new_post}
 
 @app.get("/posts/{id}")
-def get_post(id: int):
-    cursor.execute("SELECT * FROM posts WHERE id = %s", (str(id),))
-    post = cursor.fetchone()
+def get_post(id: int, db: Session = Depends(get_db)):
+    # .filter() is the ORM equivalent of WHERE - here we filter rows where Post.id matches
+    # .first() returns the first matching row, or None if nothing is found
+    # This replaces: cursor.execute("SELECT * FROM posts WHERE id = %s", ...) + cursor.fetchone()
+    post = db.query(models.Post).filter(models.Post.id == id).first()
     if not post:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"post with id: {id} was not found")
     return {"data": post}
