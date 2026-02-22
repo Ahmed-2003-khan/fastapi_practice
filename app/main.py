@@ -7,13 +7,13 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 import os
 from dotenv import load_dotenv
-# Session from sqlalchemy.orm provides type hinting for the database session object
 from sqlalchemy.orm import Session
-# Depends is used for dependency injection in FastAPI, allowing us to share common logic (like database connections)
 from fastapi import Depends
 import time
 from . import models
-from .database import engine, SessionLocal
+# get_db is now imported from database.py - centralizing the session logic in one place
+from .database import engine, SessionLocal, get_db
+
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -22,12 +22,6 @@ load_dotenv()
 
 app = FastAPI()
 
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
 
 my_posts = [{'title': 'title of post 1', 'content': 'content of post 1', 'id': 1}, {'title': 'title of post 2', 'content': 'content of post 2', 'id': 2}]
 
@@ -59,15 +53,13 @@ def find_index_post(id: int):
         if p['id'] == id:
             return i
 
-# Test route to verify the database dependency injection
-# db: Session = Depends(get_db) performs several tasks:
-# 1. Calls get_db() to create a new database session
-# 2. Injects that session into the 'db' parameter
-# 3. Ensures the session is closed after the request is finished (via the finally block in get_db)
 @app.get("/sqlalchemy")
 def test_posts(db: Session = Depends(get_db)):
-    # At this point, 'db' is a live SQLAlchemy session ready for ORM queries
-    return {"message": "Hello World"}
+    # db.query(models.Post) - creates a SELECT query targeting the Post model/table
+    # .all() - executes the query and returns all rows as a list of Post ORM objects
+    # This is the SQLAlchemy ORM equivalent of: cursor.execute("SELECT * FROM posts")
+    posts = db.query(models.Post).all()
+    return {"data": posts}
 
 @app.get("/posts")
 def get_posts():
