@@ -59,9 +59,6 @@ def get_posts(db: Session = Depends(get_db)):
 
 @app.post("/posts", status_code=status.HTTP_201_CREATED)
 def create_posts(post: Post, db: Session = Depends(get_db)):
-    # post.dict() converts the Pydantic model to a dictionary: {'title': ..., 'content': ..., 'published': ...}
-    # **post.dict() unpacks it as keyword arguments - cleaner than listing every field manually
-    # This is especially useful when models have many fields
     new_post = models.Post(**post.dict())
     db.add(new_post)
     db.commit()
@@ -70,9 +67,6 @@ def create_posts(post: Post, db: Session = Depends(get_db)):
 
 @app.get("/posts/{id}")
 def get_post(id: int, db: Session = Depends(get_db)):
-    # .filter() is the ORM equivalent of WHERE - here we filter rows where Post.id matches
-    # .first() returns the first matching row, or None if nothing is found
-    # This replaces: cursor.execute("SELECT * FROM posts WHERE id = %s", ...) + cursor.fetchone()
     post = db.query(models.Post).filter(models.Post.id == id).first()
     if not post:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"post with id: {id} was not found")
@@ -80,21 +74,29 @@ def get_post(id: int, db: Session = Depends(get_db)):
 
 
 @app.delete("/posts/{id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_post(id: int):
-    cursor.execute("DELETE FROM posts WHERE id = %s RETURNING *", (str(id),))
-    deleted_post = cursor.fetchone()
-    conn.commit()
-    if deleted_post == None:
+def delete_post(id: int, db: Session = Depends(get_db)):
+    # Query for the post first to check if it exists before deleting
+    post = db.query(models.Post).filter(models.Post.id == id).first()
+    if not post:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"post with id: {id} was not found")
-    return Response(status_code=status.HTTP_204_NO_CONTENT, content=str(deleted_post))
+    # db.delete() marks the ORM object for deletion - equivalent to DELETE FROM posts WHERE id = %s
+    db.delete(post)
+    db.commit()
+    # 204 No Content - success response with no body (standard for DELETE)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @app.put("/posts/{id}", status_code=status.HTTP_202_ACCEPTED)
-def update_post(id: int, post: Post):
-    cursor.execute("UPDATE posts SET title = %s, content = %s, published = %s WHERE id = %s RETURNING *", (post.title, post.content, post.published, str(id)))
-    updated_post = cursor.fetchone()
-    conn.commit()
-    if updated_post == None:
+def update_post(id: int, updated_post: Post, db: Session = Depends(get_db)):
+    # Store the query object (not the result) so we can reuse it for both .first() and .update()
+    post_query = db.query(models.Post).filter(models.Post.id == id)
+    post = post_query.first()
+    if not post:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"post with id: {id} was not found")
-    return {"data": updated_post}
+    # .update() runs an UPDATE SQL statement on all rows matching the filter
+    # synchronize_session=False tells SQLAlchemy not to sync in-memory objects, which is fine here
+    post_query.update(updated_post.dict(), synchronize_session=False)
+    db.commit()
+    # Call .first() again after commit to return the freshly updated row
+    return {"data": post_query.first()}
 
