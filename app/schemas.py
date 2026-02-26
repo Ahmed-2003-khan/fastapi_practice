@@ -1,10 +1,23 @@
 from pydantic import BaseModel
 
-# schemas.py defines Pydantic models (schemas) that handle request validation and response serialization
-# This is intentionally separate from models.py (SQLAlchemy) to follow separation of concerns:
-# - models.py = database table structure (SQLAlchemy)
-# - schemas.py = API input/output shape (Pydantic)
+# Base/generic schema for Post - used as a shared base or for general typing
 class Post(BaseModel):
     title: str
     content: str
     published: bool = True
+
+# Dedicated schema for POST /posts - defines what fields are required when creating a post
+# Having a separate CreatePost schema allows future flexibility
+# (e.g. some fields might be auto-generated and not needed in the request)
+class CreatePost(BaseModel):
+    title: str
+    content: str
+    published: bool = True
+
+# Dedicated schema for PUT /posts/{id} - defines what fields are accepted when updating
+# Note: published has no default here, making it required for a full update (PUT)
+# Separating update schema from create allows each to evolve independently
+class UpdatePost(BaseModel):
+    title: str
+    content: str
+    published: bool

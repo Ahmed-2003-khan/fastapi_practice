@@ -10,7 +10,6 @@ from dotenv import load_dotenv
 from sqlalchemy.orm import Session
 from fastapi import Depends
 import time
-# schemas module is imported to access Pydantic request/response models separately from SQLAlchemy ORM models
 from . import models, schemas
 from .database import engine, SessionLocal, get_db
 
@@ -54,7 +53,8 @@ def get_posts(db: Session = Depends(get_db)):
     return {"data": posts}
 
 @app.post("/posts", status_code=status.HTTP_201_CREATED)
-def create_posts(post: Post, db: Session = Depends(get_db)):
+# schemas.Post is used here to validate the request body via the schemas module
+def create_posts(post: schemas.Post, db: Session = Depends(get_db)):
     new_post = models.Post(**post.dict())
     db.add(new_post)
     db.commit()
@@ -80,7 +80,8 @@ def delete_post(id: int, db: Session = Depends(get_db)):
 
 
 @app.put("/posts/{id}", status_code=status.HTTP_202_ACCEPTED)
-def update_post(id: int, updated_post: Post, db: Session = Depends(get_db)):
+# schemas.Post is used to validate the full update payload
+def update_post(id: int, updated_post: schemas.Post, db: Session = Depends(get_db)):
     post_query = db.query(models.Post).filter(models.Post.id == id)
     post = post_query.first()
     if not post:
