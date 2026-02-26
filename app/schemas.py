@@ -1,16 +1,26 @@
 from pydantic import BaseModel
 
-# PostBase holds shared fields common to all Post schemas
-# It acts as the single source of truth for field definitions
-# Other schemas inherit from it so changes only need to be made in one place
+# PostBase defines shared input fields for creating and updating posts
 class PostBase(BaseModel):
     title: str
     content: str
     published: bool = True
 
-# PostCreate inherits all fields from PostBase
-# Using 'pass' means it adds no new fields - it's a dedicated schema for POST requests
-# Having a separate class allows future modification (e.g. adding extra create-only fields)
-# without breaking other schemas that extend PostBase
+# PostCreate is used for validating incoming POST/PUT request bodies
+# Inherits all fields from PostBase via 'pass'
 class PostCreate(PostBase):
     pass
+
+# Post is the RESPONSE schema - controls what fields are returned to the client
+# It intentionally does NOT inherit PostBase; it's a separate contract for output
+class Post(BaseModel):
+    title: str
+    content: str
+    published: bool
+
+    # Config class tells Pydantic how to read the data
+    # from_attributes = True (formerly orm_mode = True in Pydantic v1) allows Pydantic to
+    # read data from SQLAlchemy ORM object attributes (e.g. post.title) instead of dict keys
+    # Without this, FastAPI cannot serialize ORM objects and will throw a validation error
+    class Config:
+        from_attributes = True
