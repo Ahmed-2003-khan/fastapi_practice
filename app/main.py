@@ -10,7 +10,8 @@ from dotenv import load_dotenv
 from sqlalchemy.orm import Session
 from fastapi import Depends
 import time
-from . import models
+# schemas module is imported to access Pydantic request/response models separately from SQLAlchemy ORM models
+from . import models, schemas
 from .database import engine, SessionLocal, get_db
 
 
@@ -23,11 +24,6 @@ app = FastAPI()
 
 
 my_posts = [{'title': 'title of post 1', 'content': 'content of post 1', 'id': 1}, {'title': 'title of post 2', 'content': 'content of post 2', 'id': 2}]
-
-class Post(BaseModel):
-    title: str
-    content: str
-    published: bool = True
     
 
 while True:
