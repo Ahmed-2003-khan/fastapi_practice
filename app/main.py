@@ -53,8 +53,8 @@ def get_posts(db: Session = Depends(get_db)):
     return {"data": posts}
 
 @app.post("/posts", status_code=status.HTTP_201_CREATED)
-# schemas.Post is used here to validate the request body via the schemas module
-def create_posts(post: schemas.Post, db: Session = Depends(get_db)):
+# schemas.PostCreate (inherits PostBase) validates the request body for creating a post
+def create_posts(post: schemas.PostCreate, db: Session = Depends(get_db)):
     new_post = models.Post(**post.dict())
     db.add(new_post)
     db.commit()
@@ -80,8 +80,8 @@ def delete_post(id: int, db: Session = Depends(get_db)):
 
 
 @app.put("/posts/{id}", status_code=status.HTTP_202_ACCEPTED)
-# schemas.Post is used to validate the full update payload
-def update_post(id: int, updated_post: schemas.Post, db: Session = Depends(get_db)):
+# schemas.PostCreate is reused for updates - both create and update require the same fields
+def update_post(id: int, updated_post: schemas.PostCreate, db: Session = Depends(get_db)):
     post_query = db.query(models.Post).filter(models.Post.id == id)
     post = post_query.first()
     if not post:

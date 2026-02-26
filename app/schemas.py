@@ -1,23 +1,16 @@
 from pydantic import BaseModel
 
-# Base/generic schema for Post - used as a shared base or for general typing
-class Post(BaseModel):
+# PostBase holds shared fields common to all Post schemas
+# It acts as the single source of truth for field definitions
+# Other schemas inherit from it so changes only need to be made in one place
+class PostBase(BaseModel):
     title: str
     content: str
     published: bool = True
 
-# Dedicated schema for POST /posts - defines what fields are required when creating a post
-# Having a separate CreatePost schema allows future flexibility
-# (e.g. some fields might be auto-generated and not needed in the request)
-class CreatePost(BaseModel):
-    title: str
-    content: str
-    published: bool = True
-
-# Dedicated schema for PUT /posts/{id} - defines what fields are accepted when updating
-# Note: published has no default here, making it required for a full update (PUT)
-# Separating update schema from create allows each to evolve independently
-class UpdatePost(BaseModel):
-    title: str
-    content: str
-    published: bool
+# PostCreate inherits all fields from PostBase
+# Using 'pass' means it adds no new fields - it's a dedicated schema for POST requests
+# Having a separate class allows future modification (e.g. adding extra create-only fields)
+# without breaking other schemas that extend PostBase
+class PostCreate(PostBase):
+    pass
