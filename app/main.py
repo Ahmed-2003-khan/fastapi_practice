@@ -50,23 +50,25 @@ def find_index_post(id: int):
 @app.get("/posts")
 def get_posts(db: Session = Depends(get_db)):
     posts = db.query(models.Post).all()
-    return {"data": posts}
+    # Returning ORM objects directly - requires response_model to serialize properly
+    return posts
 
 @app.post("/posts", status_code=status.HTTP_201_CREATED)
-# schemas.PostCreate (inherits PostBase) validates the request body for creating a post
 def create_posts(post: schemas.PostCreate, db: Session = Depends(get_db)):
     new_post = models.Post(**post.dict())
     db.add(new_post)
     db.commit()
     db.refresh(new_post)
-    return {"data": new_post}
+    # Returning the ORM object; response_model will control what fields are exposed
+    return new_post
 
 @app.get("/posts/{id}")
 def get_post(id: int, db: Session = Depends(get_db)):
     post = db.query(models.Post).filter(models.Post.id == id).first()
     if not post:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"post with id: {id} was not found")
-    return {"data": post}
+    # Returning the ORM object directly instead of wrapping in {"data": ...}
+    return post
 
 
 @app.delete("/posts/{id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -80,7 +82,6 @@ def delete_post(id: int, db: Session = Depends(get_db)):
 
 
 @app.put("/posts/{id}", status_code=status.HTTP_202_ACCEPTED)
-# schemas.PostCreate is reused for updates - both create and update require the same fields
 def update_post(id: int, updated_post: schemas.PostCreate, db: Session = Depends(get_db)):
     post_query = db.query(models.Post).filter(models.Post.id == id)
     post = post_query.first()
@@ -88,5 +89,6 @@ def update_post(id: int, updated_post: schemas.PostCreate, db: Session = Depends
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"post with id: {id} was not found")
     post_query.update(updated_post.dict(), synchronize_session=False)
     db.commit()
-    return {"data": post_query.first()}
+    # Returning the updated ORM object directly
+    return post_query.first()
 
