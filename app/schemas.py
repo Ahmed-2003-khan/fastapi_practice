@@ -1,26 +1,25 @@
 from pydantic import BaseModel
+# datetime is imported to properly type-hint timestamp fields from the database
+from datetime import datetime
 
-# PostBase defines shared input fields for creating and updating posts
 class PostBase(BaseModel):
     title: str
     content: str
     published: bool = True
 
-# PostCreate is used for validating incoming POST/PUT request bodies
-# Inherits all fields from PostBase via 'pass'
 class PostCreate(PostBase):
     pass
 
-# Post is the RESPONSE schema - controls what fields are returned to the client
-# It intentionally does NOT inherit PostBase; it's a separate contract for output
+# Post is the response schema - defines exactly what the API returns to the client
+# It includes server-generated fields (id, created_at) that clients receive but never send
 class Post(BaseModel):
+    id: int            # auto-generated primary key from PostgreSQL
     title: str
     content: str
     published: bool
+    created_at: datetime   # auto-set by server_default=func.now() in the database
 
-    # Config class tells Pydantic how to read the data
-    # from_attributes = True (formerly orm_mode = True in Pydantic v1) allows Pydantic to
-    # read data from SQLAlchemy ORM object attributes (e.g. post.title) instead of dict keys
-    # Without this, FastAPI cannot serialize ORM objects and will throw a validation error
+    # from_attributes = True enables Pydantic to read from SQLAlchemy ORM object attributes
+    # This is how FastAPI bridges response_model with ORM objects
     class Config:
         from_attributes = True

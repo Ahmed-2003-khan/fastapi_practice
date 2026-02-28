@@ -52,10 +52,6 @@ def get_posts(db: Session = Depends(get_db)):
     posts = db.query(models.Post).all()
     return posts
 
-# response_model=schemas.Post tells FastAPI to:
-# 1. Serialize the returned ORM object using the Post schema (via from_attributes=True)
-# 2. Filter output to only include fields defined in schemas.Post
-# 3. Validate and document the response shape in OpenAPI/Swagger
 @app.post("/posts", status_code=status.HTTP_201_CREATED, response_model=schemas.Post)
 def create_posts(post: schemas.PostCreate, db: Session = Depends(get_db)):
     new_post = models.Post(**post.dict())
