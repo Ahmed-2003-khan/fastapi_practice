@@ -1,5 +1,4 @@
 from pydantic import BaseModel
-# datetime is imported to properly type-hint timestamp fields from the database
 from datetime import datetime
 
 class PostBase(BaseModel):
@@ -10,16 +9,14 @@ class PostBase(BaseModel):
 class PostCreate(PostBase):
     pass
 
-# Post is the response schema - defines exactly what the API returns to the client
-# It includes server-generated fields (id, created_at) that clients receive but never send
+# Post is the response schema - note it only exposes id and created_at
+# This demonstrates that response_model acts as a FILTER:
+# even if the ORM object has title, content, published - they won't be sent
+# unless explicitly defined here. You control the exact API surface.
 class Post(BaseModel):
-    id: int            # auto-generated primary key from PostgreSQL
-    title: str
-    content: str
-    published: bool
-    created_at: datetime   # auto-set by server_default=func.now() in the database
+    id: int
+    created_at: datetime
 
-    # from_attributes = True enables Pydantic to read from SQLAlchemy ORM object attributes
-    # This is how FastAPI bridges response_model with ORM objects
+    # from_attributes = True allows Pydantic to read from SQLAlchemy ORM object attributes
     class Config:
         from_attributes = True
