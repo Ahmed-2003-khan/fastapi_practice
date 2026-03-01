@@ -16,7 +16,6 @@ class Post(Base):
 class User(Base):
     __tablename__ = "users"
 
-    # id is defined first - conventional ordering: primary key at the top
     id = Column(Integer, primary_key=True, nullable=False)
     email = Column(String, nullable=False, unique=True)
     password = Column(String, nullable=False)
