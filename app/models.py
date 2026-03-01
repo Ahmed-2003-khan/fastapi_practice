@@ -13,12 +13,11 @@ class Post(Base):
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=func.now())
 
 
-# User model - the foundation for user authentication
-# email is unique to ensure one account per email address
 class User(Base):
     __tablename__ = "users"
 
+    # id is defined first - conventional ordering: primary key at the top
+    id = Column(Integer, primary_key=True, nullable=False)
     email = Column(String, nullable=False, unique=True)
     password = Column(String, nullable=False)
-    id = Column(Integer, primary_key=True, nullable=False)
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=func.now())

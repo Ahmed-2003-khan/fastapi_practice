@@ -1,7 +1,6 @@
 from fastapi import FastAPI, Response, status, HTTPException
 from fastapi.params import Body
 from pydantic import BaseModel
-# List is imported to type-hint response_model for endpoints that return multiple items
 from typing import Optional, List
 from random import randrange
 import psycopg2
@@ -48,8 +47,6 @@ def find_index_post(id: int):
         if p['id'] == id:
             return i
 
-# response_model=List[schemas.Post] tells FastAPI this endpoint returns a list of Post objects
-# List wraps the schema to handle array serialization and Swagger documentation
 @app.get("/posts", response_model=List[schemas.Post])
 def get_posts(db: Session = Depends(get_db)):
     posts = db.query(models.Post).all()
@@ -91,3 +88,13 @@ def update_post(id: int, updated_post: schemas.PostCreate, db: Session = Depends
     db.commit()
     return post_query.first()
 
+# POST /users - user registration endpoint
+# UserCreate validates email format and accepts password as plain text
+# Note: password should be hashed before storing - this is the next improvement
+@app.post("/users", status_code=status.HTTP_201_CREATED)
+def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
+    new_user = models.User(**user.dict())
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+    return new_user
