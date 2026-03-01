@@ -1,7 +1,8 @@
 from fastapi import FastAPI, Response, status, HTTPException
 from fastapi.params import Body
 from pydantic import BaseModel
-from typing import Optional
+# List is imported to type-hint response_model for endpoints that return multiple items
+from typing import Optional, List
 from random import randrange
 import psycopg2
 from psycopg2.extras import RealDictCursor
@@ -47,7 +48,9 @@ def find_index_post(id: int):
         if p['id'] == id:
             return i
 
-@app.get("/posts")
+# response_model=List[schemas.Post] tells FastAPI this endpoint returns a list of Post objects
+# List wraps the schema to handle array serialization and Swagger documentation
+@app.get("/posts", response_model=List[schemas.Post])
 def get_posts(db: Session = Depends(get_db)):
     posts = db.query(models.Post).all()
     return posts
@@ -60,7 +63,6 @@ def create_posts(post: schemas.PostCreate, db: Session = Depends(get_db)):
     db.refresh(new_post)
     return new_post
 
-# response_model ensures this route also serializes and filters via schemas.Post
 @app.get("/posts/{id}", response_model=schemas.Post)
 def get_post(id: int, db: Session = Depends(get_db)):
     post = db.query(models.Post).filter(models.Post.id == id).first()
@@ -79,7 +81,6 @@ def delete_post(id: int, db: Session = Depends(get_db)):
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
-# response_model on PUT ensures the updated post is returned in the same schema shape
 @app.put("/posts/{id}", status_code=status.HTTP_202_ACCEPTED, response_model=schemas.Post)
 def update_post(id: int, updated_post: schemas.PostCreate, db: Session = Depends(get_db)):
     post_query = db.query(models.Post).filter(models.Post.id == id)
