@@ -1,17 +1,6 @@
-from fastapi import FastAPI, Response, status, HTTPException
-from fastapi.params import Body
-from pydantic import BaseModel
-from typing import Optional, List
-from random import randrange
-import psycopg2
-from psycopg2.extras import RealDictCursor
-import os
-from dotenv import load_dotenv
-from sqlalchemy.orm import Session
-from fastapi import Depends
-import time
-from . import models, schemas, utils
-from .database import engine, SessionLocal, get_db
+from fastapi import FastAPI
+from . import models
+from .database import engine
 
 
 models.Base.metadata.create_all(bind=engine)
