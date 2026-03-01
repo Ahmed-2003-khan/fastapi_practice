@@ -1,6 +1,8 @@
 from fastapi import FastAPI, Response, status, HTTPException
 from fastapi.params import Body
 from pydantic import BaseModel
+# CryptContext from passlib manages password hashing schemes
+# It abstracts away the hashing algorithm details
 from passlib.context import CryptContext
 from typing import Optional, List
 from random import randrange
@@ -15,6 +17,10 @@ from . import models, schemas
 from .database import engine, SessionLocal, get_db
 
 
+# Create a hashing context using bcrypt algorithm
+# bcrypt is a strong, adaptive hashing algorithm designed to be slow (resistant to brute force)
+# deprecated='auto' allows passlib to upgrade old hashes automatically
+# NOTE: requires bcrypt==4.0.1 - bcrypt 5.x broke passlib 1.7.4 compatibility
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 models.Base.metadata.create_all(bind=engine)
@@ -91,13 +97,15 @@ def update_post(id: int, updated_post: schemas.PostCreate, db: Session = Depends
     db.commit()
     return post_query.first()
 
-# response_model=schemas.UserOut ensures password is NEVER returned in the response
-# Even though new_user has a password attribute, UserOut only exposes id, email, created_at
 @app.post("/users", status_code=status.HTTP_201_CREATED, response_model=schemas.UserOut)
 def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
+    # Hash the plain text password BEFORE storing to the database
+    # This ensures even if the database is compromised, passwords can't be read
+    hashed_password = pwd_context.hash(user.password)
+    # Overwrite the plain text password on the Pydantic model with the hashed version
+    user.password = hashed_password
     new_user = models.User(**user.dict())
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
-    # Returning the full ORM object - response_model filters out the password field automatically
     return new_user
