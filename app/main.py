@@ -10,7 +10,6 @@ from dotenv import load_dotenv
 from sqlalchemy.orm import Session
 from fastapi import Depends
 import time
-# utils module imported for reusable helper functions (e.g. password hashing)
 from . import models, schemas, utils
 from .database import engine, SessionLocal, get_db
 
@@ -91,7 +90,6 @@ def update_post(id: int, updated_post: schemas.PostCreate, db: Session = Depends
 
 @app.post("/users", status_code=status.HTTP_201_CREATED, response_model=schemas.UserOut)
 def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
-    # utils.hash() wraps bcrypt hashing - now centralised in utils.py instead of main.py
     hashed_password = utils.hash(user.password)
     user.password = hashed_password
     new_user = models.User(**user.dict())
@@ -99,3 +97,13 @@ def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(new_user)
     return new_user
+
+# GET /users/{id} - retrieve a single user by their primary key
+# response_model=UserOut ensures password is never included in the response
+@app.get("/users/{id}", response_model=schemas.UserOut)
+def get_user(id: int, db: Session = Depends(get_db)):
+    # Same filter pattern as get_post - query by primary key, return first match or None
+    user = db.query(models.User).filter(models.User.id == id).first()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"user with id: {id} was not found")
+    return user
