@@ -4,8 +4,6 @@ from typing import List
 from .. import models, schemas
 from ..database import get_db
 
-# prefix='/posts' is automatically prepended to all routes in this router
-# tags=['posts'] groups these routes together in FastAPI's Swagger UI at /docs
 router = APIRouter(
     prefix="/posts",
     tags=["posts"]
