@@ -1,7 +1,6 @@
 from fastapi import FastAPI
 from . import models
 from .database import engine
-# auth router added - handles POST /login for user authentication
 from .routers import post, user, auth
 
 models.Base.metadata.create_all(bind=engine)
