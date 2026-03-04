@@ -27,3 +27,9 @@ class UserOut(BaseModel):
 
     class Config:
         from_attributes = True
+
+# UserLogin is the request schema for POST /login
+# Separate from UserCreate to keep login and registration concerns independent
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str
