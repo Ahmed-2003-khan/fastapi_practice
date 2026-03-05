@@ -1,19 +1,35 @@
 from jose import JWTError, jwt
 from datetime import datetime, timedelta
+from . import schemas
+from fastapi import Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordBearer
 
-# SECRET_KEY is used to sign the JWT - anyone with this key can forge tokens
-# In production this MUST be stored in environment variables, never hardcoded
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
+
 SECRET_KEY = "09239029120432048329482948329482344932vdvsdf7sdf7dsf7dsf7dsf7dsf7ddf"
-# HS256 = HMAC + SHA-256 - a symmetric signing algorithm (same key to sign and verify)
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 def create_access_token(data: dict):
     to_encode = data.copy()
-    # Set token expiry time - tokens are invalid after this point
     expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    # 'exp' is a standard JWT claim - libraries automatically validate it on decode
     to_encode.update({"exp": expire})
-    # jwt.encode() signs the payload with the secret key and returns a JWT string
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
+
+def verify_access_token(token: str, credentials_exception):
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        # user_id in the JWT payload is an int (DB primary key) - must match TokenData
+        id: int = payload.get("user_id")
+        if id is None:
+            raise credentials_exception
+        token_data = schemas.TokenData(id=id)
+    except JWTError:
+        raise credentials_exception
+    
+    return token_data
+
+def get_current_user(token: str = Depends(oauth2_scheme)):
+    credentials_exception = HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Could not validate credentials", headers={"WWW-Authenticate": "Bearer"})
+    return verify_access_token(token, credentials_exception)
