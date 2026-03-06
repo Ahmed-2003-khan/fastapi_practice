@@ -1,14 +1,16 @@
 from jose import JWTError, jwt
 from datetime import datetime, timedelta
-from . import schemas
+from . import schemas, models
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
+from .database import get_db
+from sqlalchemy.orm import Session
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
 SECRET_KEY = "09239029120432048329482948329482344932vdvsdf7sdf7dsf7dsf7dsf7dsf7ddf"
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+ACCESS_TOKEN_EXPIRE_MINUTES = 60
 
 def create_access_token(data: dict):
     to_encode = data.copy()
@@ -29,6 +31,10 @@ def verify_access_token(token: str, credentials_exception):
     
     return token_data
 
-def get_current_user(token: str = Depends(oauth2_scheme)):
+def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
     credentials_exception = HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Could not validate credentials", headers={"WWW-Authenticate": "Bearer"})
-    return verify_access_token(token, credentials_exception)
+    # verify_access_token ab token se id nikal kar TokenData return karta hai
+    token = verify_access_token(token, credentials_exception)
+    # Ab hum database mein us token ki id se asli User object dhoondte hain aur wo return karte hain!
+    user = db.query(models.User).filter(models.User.id == token.id).first()
+    return user

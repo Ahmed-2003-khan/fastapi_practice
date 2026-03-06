@@ -23,6 +23,5 @@ dist/
 *.db
 *.sqlite3
 
-# Yeh folder AI agent (Antigravity) apne workflows (jaese push.md) store karne ke liye use karta hai
-# Isay Git pe nahi bhejna warna agent ki system files us repo mein pahaonch jayengi
+
 .agent
