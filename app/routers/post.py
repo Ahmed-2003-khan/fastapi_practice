@@ -9,7 +9,6 @@ router = APIRouter(
     tags=["posts"]
 )
 
-# current_user dependency forces the route to require a valid JWT token
 @router.get("/", response_model=List[schemas.Post])
 def get_posts(db: Session = Depends(get_db), current_user: int = Depends(oauth2.get_current_user)):
     posts = db.query(models.Post).all()
