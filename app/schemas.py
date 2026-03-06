@@ -38,5 +38,4 @@ class Token(BaseModel):
     token_type: str
 
 class TokenData(BaseModel):
-    # int not str - user_id is a database integer primary key, not a string
     id: Optional[int] = None
