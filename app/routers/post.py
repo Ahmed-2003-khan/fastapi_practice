@@ -11,7 +11,9 @@ router = APIRouter(
 
 @router.get("/", response_model=List[schemas.Post])
 def get_posts(db: Session = Depends(get_db), current_user: int = Depends(oauth2.get_current_user)):
-    posts = db.query(models.Post).all()
+    # Filter by owner_id so each user sees ONLY their own posts, not everyone else's
+    # .filter() adds a SQL WHERE clause: SELECT * FROM posts WHERE owner_id = <current_user.id>
+    posts = db.query(models.Post).filter(models.Post.owner_id == current_user.id).all()
     return posts
 
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=schemas.Post)
@@ -27,6 +29,11 @@ def get_post(id: int, db: Session = Depends(get_db), current_user: int = Depends
     post = db.query(models.Post).filter(models.Post.id == id).first()
     if not post:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"post with id: {id} was not found")
+    
+    # Ownership check on single-post GET — a user should not be able to read another user's post by guessing the id
+    # Consistent rule: every route that touches a specific post enforces ownership
+    if post.owner_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to perform requested action")
     return post
 
 
