@@ -13,6 +13,8 @@ router = APIRouter(
 def get_posts(db: Session = Depends(get_db), current_user: int = Depends(oauth2.get_current_user)):
     # Filter by owner_id so each user sees ONLY their own posts, not everyone else's
     # .filter() adds a SQL WHERE clause: SELECT * FROM posts WHERE owner_id = <current_user.id>
+    # Design choice: full data isolation per user — common in multi-tenant apps (think personal dashboards)
+    # Alternative: return all posts globally and let the client filter — but that leaks data and wastes bandwidth
     posts = db.query(models.Post).filter(models.Post.owner_id == current_user.id).all()
     return posts
 
