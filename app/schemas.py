@@ -2,22 +2,7 @@ from pydantic import BaseModel, EmailStr
 from datetime import datetime
 from typing import Optional
 
-class PostBase(BaseModel):
-    title: str
-    content: str
-    published: bool = True
-
-class PostCreate(PostBase):
-    pass
-
-class Post(PostBase):
-    id: int
-    created_at: datetime
-    owner_id: int
-
-    class Config:
-        from_attributes = True
-
+# UserOut is defined BEFORE Post so that Post.owner can reference it (Python reads top-to-bottom)
 class UserCreate(BaseModel):
     email: EmailStr
     password: str
@@ -40,3 +25,23 @@ class Token(BaseModel):
 
 class TokenData(BaseModel):
     id: Optional[int] = None
+
+
+class PostBase(BaseModel):
+    title: str
+    content: str
+    published: bool = True
+
+class PostCreate(PostBase):
+    pass
+
+class Post(PostBase):
+    id: int
+    created_at: datetime
+    owner_id: int
+    owner: UserOut  # nested Pydantic model — Pydantic serializes the related User object into this shape automatically
+
+    class Config:
+        from_attributes = True  # required so Pydantic can read post.owner (an ORM object) not just plain dicts
+
+
