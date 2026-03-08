@@ -59,6 +59,8 @@ def update_post(id: int, updated_post: schemas.PostCreate, db: Session = Depends
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"post with id: {id} was not found")
 
     # Same ownership guard as delete — a user can only update their OWN posts
+    # HTTP 403 (Forbidden) not 404: the post EXISTS but the user has no permission to touch it
+    # Returning 404 here would hide the post's existence — 403 is the correct semantic
     if post.owner_id != current_user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to perform requested action")
 
