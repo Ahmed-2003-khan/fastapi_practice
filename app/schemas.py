@@ -3,6 +3,7 @@ from datetime import datetime
 from typing import Optional
 
 # UserOut is defined BEFORE Post so that Post.owner can reference it (Python reads top-to-bottom)
+# Alternative: use a forward reference string 'UserOut' and call model_rebuild() — but reordering is cleaner
 class UserCreate(BaseModel):
     email: EmailStr
     password: str
