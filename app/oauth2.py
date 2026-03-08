@@ -21,9 +21,11 @@ from sqlalchemy.orm import Session
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
 # NEVER hardcode SECRET_KEY in production — use environment variables instead
+# In production: SECRET_KEY = os.environ.get("SECRET_KEY")
 SECRET_KEY = "09239029120432048329482948329482344932vdvsdf7sdf7dsf7dsf7dsf7dsf7ddf"
 ALGORITHM = "HS256"                                     # HS256 = HMAC-SHA256, a symmetric signing algorithm
 ACCESS_TOKEN_EXPIRE_MINUTES = 60                        # token expires after 60 minutes of inactivity
+# Note: shorter expiry = more secure but worse UX; longer = more convenient but higher risk if stolen
 
 def create_access_token(data: dict):
     to_encode = data.copy()                             # copy so we don't mutate the original dict
