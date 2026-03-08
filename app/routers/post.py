@@ -31,6 +31,7 @@ def get_post(id: int, db: Session = Depends(get_db), current_user: int = Depends
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"post with id: {id} was not found")
     
     # Ownership check on single-post GET — a user should not be able to read another user's post by guessing the id
+    # This prevents IDOR (Insecure Direct Object Reference): attacker increments id=1,2,3... to read others' data
     # Consistent rule: every route that touches a specific post enforces ownership
     if post.owner_id != current_user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to perform requested action")
