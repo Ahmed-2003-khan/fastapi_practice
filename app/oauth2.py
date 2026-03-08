@@ -1,3 +1,14 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# oauth2.py  —  JWT Authentication module
+#
+# JWT flow:
+#   1. User POSTs credentials to /login  →  server verifies  →  returns JWT
+#   2. Client stores the JWT and sends it in every request:
+#        Authorization: Bearer <token>
+#   3. FastAPI's OAuth2PasswordBearer middleware extracts the token from the header
+#   4. get_current_user() dependency decodes the token, looks up the user in DB,
+#      and makes the User object available to the route handler
+# ─────────────────────────────────────────────────────────────────────────────
 from jose import JWTError, jwt                          # python-jose: handles JWT encoding/decoding
 from datetime import datetime, timedelta                # used to set token expiry time
 from . import schemas, models                           # schemas for TokenData, models for User DB table
