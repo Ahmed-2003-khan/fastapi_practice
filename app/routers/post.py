@@ -11,10 +11,6 @@ router = APIRouter(
 
 @router.get("/", response_model=List[schemas.Post])
 def get_posts(db: Session = Depends(get_db), current_user: int = Depends(oauth2.get_current_user)):
-    # Filter by owner_id so each user sees ONLY their own posts, not everyone else's
-    # .filter() adds a SQL WHERE clause: SELECT * FROM posts WHERE owner_id = <current_user.id>
-    # Design choice: full data isolation per user — common in multi-tenant apps (think personal dashboards)
-    # Alternative: return all posts globally and let the client filter — but that leaks data and wastes bandwidth
     posts = db.query(models.Post).filter(models.Post.owner_id == current_user.id).all()
     return posts
 
@@ -32,9 +28,6 @@ def get_post(id: int, db: Session = Depends(get_db), current_user: int = Depends
     if not post:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"post with id: {id} was not found")
     
-    # Ownership check on single-post GET — a user should not be able to read another user's post by guessing the id
-    # This prevents IDOR (Insecure Direct Object Reference): attacker increments id=1,2,3... to read others' data
-    # Consistent rule: every route that touches a specific post enforces ownership
     if post.owner_id != current_user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to perform requested action")
     return post
