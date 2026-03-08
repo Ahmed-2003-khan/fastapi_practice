@@ -1,3 +1,6 @@
+# Relationship: One User → Many Posts (one-to-many)
+# The FK (owner_id) lives on the "many" side (posts table) — this is always the rule in SQL
+# SQLAlchemy can also set up relationship() objects to navigate between models in Python code
 from .database import Base
 from sqlalchemy import Column, Integer, String, Boolean, ForeignKey  # ForeignKey: creates a DB-level link between tables
 from sqlalchemy.sql.sqltypes import TIMESTAMP
