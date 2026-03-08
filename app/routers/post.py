@@ -1,3 +1,5 @@
+# Authorization pattern: Authentication (who are you?) is done by oauth2_scheme (JWT)
+#                        Authorization  (what can you do?) is done manually per route with owner_id checks
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session
 from typing import List
