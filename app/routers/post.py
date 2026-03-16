@@ -1,3 +1,13 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# post.py  —  Post Routing and Resource Management
+#
+# Concepts covered in this module:
+# 1. Query Parameters: Extra arguments in the route function (limit, skip, search) 
+#    are automatically parsed from the URL query string (e.g., ?limit=5&skip=2).
+# 2. Database Pagination: Using SQLAlchemy's .limit() and .offset() to fetch 
+#    data in chunks rather than overwhelming the database/client with all records.
+# 3. Text Search: Using SQLAlchemy's .contains() for "LIKE %query%" style matching.
+# ─────────────────────────────────────────────────────────────────────────────
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session
 from typing import List, Optional
