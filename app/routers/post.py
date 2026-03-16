@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 from .. import models, schemas, oauth2
 from ..database import get_db
 
@@ -10,8 +10,14 @@ router = APIRouter(
 )
 
 @router.get("/", response_model=List[schemas.Post])
-def get_posts(db: Session = Depends(get_db), current_user: int = Depends(oauth2.get_current_user)):
-    posts = db.query(models.Post).filter(models.Post.owner_id == current_user.id).all()
+# limit, skip, and search are Query Parameters (because they are not in the path string "/")
+# FastAPI automatically extracts them from the URL: /posts?limit=5&skip=2&search=fastapi
+# typing.Optional[str] = "" means search is not required and defaults to an empty string
+def get_posts(db: Session = Depends(get_db), current_user: int = Depends(oauth2.get_current_user), limit: int = 10, skip: int = 0, search: Optional[str] = ""):
+    # .contains() generates a SQL "ILIKE '%search%'" clause for partial string matching
+    # .limit() restricts the number of rows returned (pagination limit)
+    # .offset() skips the first n rows (pagination offset/page)
+    posts = db.query(models.Post).filter(models.Post.owner_id == current_user.id, models.Post.title.contains(search)).limit(limit).offset(skip).all()
     return posts
 
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=schemas.Post)
