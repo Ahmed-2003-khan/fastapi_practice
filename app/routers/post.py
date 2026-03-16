@@ -1,13 +1,3 @@
-# ─────────────────────────────────────────────────────────────────────────────
-# post.py  —  Post Routing and Resource Management
-#
-# Concepts covered in this module:
-# 1. Query Parameters: Extra arguments in the route function (limit, skip, search) 
-#    are automatically parsed from the URL query string (e.g., ?limit=5&skip=2).
-# 2. Database Pagination: Using SQLAlchemy's .limit() and .offset() to fetch 
-#    data in chunks rather than overwhelming the database/client with all records.
-# 3. Text Search: Using SQLAlchemy's .contains() for "LIKE %query%" style matching.
-# ─────────────────────────────────────────────────────────────────────────────
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session
 from typing import List, Optional
@@ -20,13 +10,7 @@ router = APIRouter(
 )
 
 @router.get("/", response_model=List[schemas.Post])
-# limit, skip, and search are Query Parameters (because they are not in the path string "/")
-# FastAPI automatically extracts them from the URL: /posts?limit=5&skip=2&search=fastapi
-# typing.Optional[str] = "" means search is not required and defaults to an empty string
 def get_posts(db: Session = Depends(get_db), current_user: int = Depends(oauth2.get_current_user), limit: int = 10, skip: int = 0, search: Optional[str] = ""):
-    # .contains() generates a SQL "ILIKE '%search%'" clause for partial string matching
-    # .limit() restricts the number of rows returned (pagination limit)
-    # .offset() skips the first n rows (pagination offset/page)
     posts = db.query(models.Post).filter(models.Post.owner_id == current_user.id, models.Post.title.contains(search)).limit(limit).offset(skip).all()
     return posts
 
